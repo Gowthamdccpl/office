@@ -10,3 +10,6 @@ if echo "$content" | grep -qi "$heading"; then
 else
     echo "failure"
 fi
+
+
+echo"thanks for using this script"
