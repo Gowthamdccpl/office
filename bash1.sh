@@ -16,3 +16,4 @@ HOSTNAME="ec2-${PUBLIC_IP}.ap-south-1.compute.amazonaws.com"   # Building hostna
 echo "Connecting to $HOSTNAME..."
 ssh -i "office.pem" ubuntu@"$HOSTNAME"
 
+echo"just another line"
