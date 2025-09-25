@@ -17,30 +17,18 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Configure AWS CLI properly
+    - name: Configure AWS CLI
       run: |
-        # Create AWS configuration directory
-        mkdir -p ~/.aws
+        # Install AWS CLI (ensure it's available)
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -q awscliv2.zip
+        sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
         
-        # Create config file
-        cat << EOF > ~/.aws/config
-[default]
-region = ap-south-1
-output = json
-EOF
-
-        # Create credentials file
-        cat << EOF > ~/.aws/credentials
-[default]
-aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
-aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-EOF
-
-        # Verify the files were created
-        echo "AWS config file:"
-        cat ~/.aws/config
-        echo "AWS credentials file (first few chars of key):"
-        head -c 20 ~/.aws/credentials && echo "..."
+        # Configure AWS using the configure command
+        aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+        aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        aws configure set region ap-south-1
+        aws configure set output json
 
     - name: Test AWS connection
       run: |
