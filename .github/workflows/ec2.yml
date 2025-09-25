@@ -15,15 +15,35 @@ on:
 jobs:
   manage-ec2:
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ap-south-1
     
     steps:
+    - name: Configure AWS CLI properly
+      run: |
+        # Create AWS configuration directory
+        mkdir -p ~/.aws
+        
+        # Create config file
+        cat << EOF > ~/.aws/config
+[default]
+region = ap-south-1
+output = json
+EOF
+
+        # Create credentials file
+        cat << EOF > ~/.aws/credentials
+[default]
+aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+EOF
+
+        # Verify the files were created
+        echo "AWS config file:"
+        cat ~/.aws/config
+        echo "AWS credentials file (first few chars of key):"
+        head -c 20 ~/.aws/credentials && echo "..."
+
     - name: Test AWS connection
       run: |
-        echo "Testing AWS credentials..."
         aws sts get-caller-identity
 
     - name: Execute EC2 Action
