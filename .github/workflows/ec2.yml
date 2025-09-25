@@ -1,58 +1,21 @@
-name: Manage EC2 Instance
+name: Debug IAM User Status
 
-on:
-  workflow_dispatch:
-    inputs:
-      action:
-        description: 'Action to perform'
-        required: true
-        default: 'start'
-        type: choice
-        options:
-        - start
-        - stop
+on: workflow_dispatch
 
 jobs:
-  manage-ec2:
+  debug:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Configure AWS CLI
+    - name: Configure AWS
       run: |
-        # Install AWS CLI (ensure it's available)
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip -q awscliv2.zip
-        sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-        
-        # Configure AWS using the configure command
         aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
         aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
         aws configure set region ap-south-1
-        aws configure set output json
 
-    - name: Test AWS connection
+    - name: Test with different regions
       run: |
-        aws sts get-caller-identity
-
-    - name: Execute EC2 Action
-      run: |
-        if [ "${{ github.event.inputs.action }}" == "start" ]; then
-          echo "Starting EC2 instance: i-0418f0fdd1b4ed30f"
-          aws ec2 start-instances --instance-ids i-0418f0fdd1b4ed30f
-          echo "Waiting for instance to be running..."
-          aws ec2 wait instance-running --instance-ids i-0418f0fdd1b4ed30f
-          echo "Instance is now running!"
-        elif [ "${{ github.event.inputs.action }}" == "stop" ]; then
-          echo "Stopping EC2 instance: i-0418f0fdd1b4ed30f"
-          aws ec2 stop-instances --instance-ids i-0418f0fdd1b4ed30f
-          echo "Waiting for instance to be stopped..."
-          aws ec2 wait instance-stopped --instance-ids i-0418f0fdd1b4ed30f
-          echo "Instance is now stopped!"
-        fi
-
-    - name: Get Instance Details
-      run: |
-        echo "Instance Details:"
-        aws ec2 describe-instances --instance-ids i-0418f0fdd1b4ed30f \
-          --query 'Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType,PublicIpAddress,PrivateIpAddress,Tags[?Key==`Name`].Value|[0]]' \
-          --output table
+        echo "Testing with ap-south-1:"
+        AWS_DEFAULT_REGION=ap-south-1 aws sts get-caller-identity || echo "Failed with ap-south-1"
+        
+        echo "Testing with us-east-1:"
+        AWS_DEFAULT_REGION=us-east-1 aws sts get-caller-identity || echo "Failed with us-east-1"
