@@ -17,39 +17,34 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
     - name: Start EC2 Instance
       if: github.event.inputs.action == 'start'
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ap-south-1
       run: |
         echo "Starting EC2 instance: i-0418f0fdd1b4ed30f"
-        aws ec2 start-instances --instance-ids i-0418f0fdd1b4ed30f --region ap-south-1
+        aws ec2 start-instances --instance-ids i-0418f0fdd1b4ed30f
         echo "Waiting for instance to be running..."
-        aws ec2 wait instance-running --instance-ids i-0418f0fdd1b4ed30f --region ap-south-1
+        aws ec2 wait instance-running --instance-ids i-0418f0fdd1b4ed30f
         echo "Instance is now running!"
-
+        
     - name: Stop EC2 Instance
       if: github.event.inputs.action == 'stop'
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ap-south-1
       run: |
         echo "Stopping EC2 instance: i-0418f0fdd1b4ed30f"
-        aws ec2 stop-instances --instance-ids i-0418f0fdd1b4ed30f --region ap-south-1
+        aws ec2 stop-instances --instance-ids i-0418f0fdd1b4ed30f
         echo "Waiting for instance to be stopped..."
-        aws ec2 wait instance-stopped --instance-ids i-0418f0fdd1b4ed30f --region ap-south-1
+        aws ec2 wait instance-stopped --instance-ids i-0418f0fdd1b4ed30f
         echo "Instance is now stopped!"
-
+        
     - name: Get Instance Details
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ap-south-1
       run: |
         echo "Instance Details:"
-        aws ec2 describe-instances --instance-ids i-0418f0fdd1b4ed30f --region ap-south-1 \
+        aws ec2 describe-instances --instance-ids i-0418f0fdd1b4ed30f \
           --query 'Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType,PublicIpAddress,PrivateIpAddress,Tags[?Key==`Name`].Value|[0]]' \
           --output table
