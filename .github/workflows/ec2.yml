@@ -23,25 +23,24 @@ jobs:
     steps:
     - name: Test AWS connection
       run: |
+        echo "Testing AWS credentials..."
         aws sts get-caller-identity
 
-    - name: Start EC2 Instance
-      if: github.event.inputs.action == 'start'
+    - name: Execute EC2 Action
       run: |
-        echo "Starting EC2 instance: i-0418f0fdd1b4ed30f"
-        aws ec2 start-instances --instance-ids i-0418f0fdd1b4ed30f
-        echo "Waiting for instance to be running..."
-        aws ec2 wait instance-running --instance-ids i-0418f0fdd1b4ed30f
-        echo "Instance is now running!"
-
-    - name: Stop EC2 Instance
-      if: github.event.inputs.action == 'stop'
-      run: |
-        echo "Stopping EC2 instance: i-0418f0fdd1b4ed30f"
-        aws ec2 stop-instances --instance-ids i-0418f0fdd1b4ed30f
-        echo "Waiting for instance to be stopped..."
-        aws ec2 wait instance-stopped --instance-ids i-0418f0fdd1b4ed30f
-        echo "Instance is now stopped!"
+        if [ "${{ github.event.inputs.action }}" == "start" ]; then
+          echo "Starting EC2 instance: i-0418f0fdd1b4ed30f"
+          aws ec2 start-instances --instance-ids i-0418f0fdd1b4ed30f
+          echo "Waiting for instance to be running..."
+          aws ec2 wait instance-running --instance-ids i-0418f0fdd1b4ed30f
+          echo "Instance is now running!"
+        elif [ "${{ github.event.inputs.action }}" == "stop" ]; then
+          echo "Stopping EC2 instance: i-0418f0fdd1b4ed30f"
+          aws ec2 stop-instances --instance-ids i-0418f0fdd1b4ed30f
+          echo "Waiting for instance to be stopped..."
+          aws ec2 wait instance-stopped --instance-ids i-0418f0fdd1b4ed30f
+          echo "Instance is now stopped!"
+        fi
 
     - name: Get Instance Details
       run: |
