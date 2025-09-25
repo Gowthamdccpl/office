@@ -1,21 +1,37 @@
-name: Debug IAM User Status
+name: Final Comprehensive Test
 
 on: workflow_dispatch
 
 jobs:
-  debug:
+  test:
     runs-on: ubuntu-latest
     steps:
-    - name: Configure AWS
+    - name: Install latest AWS CLI
       run: |
-        aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-        aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-        aws configure set region ap-south-1
+        cd /tmp
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -q awscliv2.zip
+        sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
 
-    - name: Test with different regions
+    - name: Clean configuration
       run: |
-        echo "Testing with ap-south-1:"
-        AWS_DEFAULT_REGION=ap-south-1 aws sts get-caller-identity || echo "Failed with ap-south-1"
+        rm -rf ~/.aws
+        mkdir -p ~/.aws
+
+    - name: Configure with exact values
+      run: |
+        # Use printf to avoid any shell interpretation
+        printf "[default]\n" > ~/.aws/credentials
+        printf "aws_access_key_id = %s\n" "${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+        printf "aws_secret_access_key = %s\n" "${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
         
-        echo "Testing with us-east-1:"
-        AWS_DEFAULT_REGION=us-east-1 aws sts get-caller-identity || echo "Failed with us-east-1"
+        printf "[default]\n" > ~/.aws/config
+        printf "region = ap-south-1\n" >> ~/.aws/config
+        printf "output = json\n" >> ~/.aws/config
+
+        echo "Credentials file content (first line):"
+        head -n 2 ~/.aws/credentials
+
+    - name: Final test
+      run: |
+        /usr/local/bin/aws sts get-caller-identity
