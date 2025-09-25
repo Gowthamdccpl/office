@@ -18,7 +18,7 @@ jobs:
     
     steps:
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -32,7 +32,7 @@ jobs:
         echo "Waiting for instance to be running..."
         aws ec2 wait instance-running --instance-ids i-0418f0fdd1b4ed30f
         echo "Instance is now running!"
-
+        
     - name: Stop EC2 Instance
       if: github.event.inputs.action == 'stop'
       run: |
@@ -41,7 +41,7 @@ jobs:
         echo "Waiting for instance to be stopped..."
         aws ec2 wait instance-stopped --instance-ids i-0418f0fdd1b4ed30f
         echo "Instance is now stopped!"
-
+        
     - name: Get Instance Details
       run: |
         echo "Instance Details:"
