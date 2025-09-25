@@ -1,20 +1,30 @@
-name: Copy files from 1 ec2 to another ec2
+name: Copy All Files from 1 EC2 to another EC2 
 
-on: workflow_dispatch
+on:
+  workflow_dispatch
 
 jobs:
-  copy-all:
+  copy-ec2:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Setup SSH Key
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+          # Add EC2 hosts to known_hosts to avoid SSH prompt
           ssh-keyscan -H ${{ secrets.EC2_A_IP }} >> ~/.ssh/known_hosts
           ssh-keyscan -H ${{ secrets.EC2_B_IP }} >> ~/.ssh/known_hosts
 
-      - name: Copy all files from EC2 A to EC2 B
+      # Step 2: Debug SSH connection to EC2 A
+      - name: Test SSH to EC2 A
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }} "echo 'SSH to EC2 A successful'"
+
+      # Step 3: Copy all files from EC2 A to EC2 B directly
+      - name: Copy all files and folders
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }} \
           "scp -r -o StrictHostKeyChecking=no /home/ubuntu/* ubuntu@${{ secrets.EC2_B_IP }}:/home/ubuntu/"
