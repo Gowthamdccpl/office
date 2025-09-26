@@ -1,4 +1,4 @@
-name: Copy All Files via GitHub Runner
+name: Copy Files via GitHub Runner
 
 on:
   workflow_dispatch
@@ -14,31 +14,25 @@ jobs:
           chmod 700 ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          # Add EC2 hosts to known_hosts
           ssh-keyscan -H ${{ secrets.EC2_A_IP }} >> ~/.ssh/known_hosts
           ssh-keyscan -H ${{ secrets.EC2_B_IP }} >> ~/.ssh/known_hosts
 
-      # Step 1.5: Debug SSH Key
+      # Step 2: Debug key (optional, remove later)
       - name: Debug SSH Key
         run: |
-          echo "Key file details:"
           ls -l ~/.ssh/id_rsa
-          echo "First few lines of the key:"
-          head -5 ~/.ssh/id_rsa
+          head -5 ~/.ssh/id_rsa || true
 
-      # Step 2: Debug SSH to EC2 A
-      - name: Test SSH to EC2 A
-        run: |
-          ssh -v -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }} "echo 'SSH to EC2 A works'"
-
-      # Step 3: Pull all files from EC2 A to GitHub runner
-      - name: Pull all files from EC2 A
+      # Step 3: Pull files from EC2 A to runner
+      - name: Pull files from EC2 A
         run: |
           mkdir -p ./ec2-files
-          scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }}:/home/ubuntu/. ./ec2-files/
-          ls -la ./ec2-files
+          scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+            ubuntu@${{ secrets.EC2_A_IP }}:/home/ubuntu/. ./ec2-files/
+          ls -la ./ec2-files   # check copied files
 
-      # Step 4: Push all files to EC2 B
-      - name: Push all files to EC2 B
+      # Step 4: Push files from runner to EC2 B
+      - name: Push files to EC2 B
         run: |
-          scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ./ec2-files/* ubuntu@${{ secrets.EC2_B_IP }}:/home/ubuntu/
+          scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no \
+            ./ec2-files/* ubuntu@${{ secrets.EC2_B_IP }}:/home/ubuntu/
