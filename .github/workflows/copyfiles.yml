@@ -1,4 +1,4 @@
-name: Copy All Files using GitHub Runner as middleman
+name: Copy All Files via GitHub Runner
 
 on:
   workflow_dispatch
@@ -23,12 +23,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }} "echo 'SSH to EC2 A works'"
 
-      # Step 3: Pull all files from EC2 A to GitHub runner
+      # Step 3: Copy all files from EC2 A to GitHub runner
       - name: Pull all files from EC2 A
         run: |
           mkdir -p ./ec2-files
           scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }}:/home/ubuntu/. ./ec2-files/
-          ls -la ./ec2-files   # Debugging: show what was copied
+          ls -la ./ec2-files   # debug check
 
       # Step 4: Push all files to EC2 B
       - name: Push all files to EC2 B
