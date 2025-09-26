@@ -12,10 +12,11 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          printf "%s\n" "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_A_IP }} >> ~/.ssh/known_hosts
           ssh-keyscan -H ${{ secrets.EC2_B_IP }} >> ~/.ssh/known_hosts
+
 
       # Step 2: Debug SSH Key (check format)
       - name: Debug SSH Key
