@@ -1,31 +1,117 @@
-name: Copy All Files via GitHub Runner
+name: Copy Files from EC2 A to EC2 B
 
-on: 
-  workflow_dispatch:
+on:
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      source_path:
+        description: 'Source path on EC2 A (default: /home/ubuntu/)'
+        required: false
+        default: '/home/ubuntu/'
+      dest_path:
+        description: 'Destination path on EC2 B (default: /home/ubuntu/)'
+        required: false
+        default: '/home/ubuntu/'
+  push:
+    branches: [ main ]  # Or trigger on push to main
 
 jobs:
-  copy-ec2:
+  copy-files:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          rm -f ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.EC2_A_IP }} >> ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.EC2_B_IP }} >> ~/.ssh/known_hosts
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Test SSH to EC2 A
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }} "echo 'SSH to EC2 A works'"
+    - name: Setup SSH Agent
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Pull all files from EC2 A
-        run: |
-          mkdir -p ./ec2-files
-          scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }}:/home/ubuntu/* ./ec2-files/
+    - name: Create SSH config
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
+        # Add SSH config for both EC2 instances
+        cat > ~/.ssh/config << 'EOF'
+        Host ec2-a
+            HostName ${{ secrets.EC2_A_IP }}
+            User ubuntu
+            Port 22
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            
+        Host ec2-b
+            HostName ${{ secrets.EC2_B_IP }}
+            User ubuntu
+            Port 22
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+        EOF
+        
+        chmod 600 ~/.ssh/config
 
-      - name: Push all files to EC2 B
-        run: |
-          scp -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ./ec2-files/* ubuntu@${{ secrets.EC2_B_IP }}:/home/ubuntu/
+    - name: Test SSH connections
+      run: |
+        echo "Testing connection to EC2 A..."
+        ssh ec2-a "echo 'Connected to EC2 A successfully' && whoami && pwd"
+        
+        echo "Testing connection to EC2 B..."
+        ssh ec2-b "echo 'Connected to EC2 B successfully' && whoami && pwd"
+
+    - name: Create temporary directory
+      run: |
+        mkdir -p ./temp_copy
+        chmod 755 ./temp_copy
+
+    - name: Copy files from EC2 A to GitHub runner
+      run: |
+        SOURCE_PATH="${{ github.event.inputs.source_path || '/home/ubuntu/' }}"
+        
+        echo "Copying files from EC2 A:$SOURCE_PATH to runner..."
+        
+        # Use rsync for better file handling and progress
+        rsync -avz --progress \
+          -e "ssh" \
+          ec2-a:"$SOURCE_PATH" \
+          ./temp_copy/
+        
+        echo "Files copied to runner successfully"
+        echo "Contents in temp_copy:"
+        ls -la ./temp_copy/
+
+    - name: Copy files from GitHub runner to EC2 B
+      run: |
+        DEST_PATH="${{ github.event.inputs.dest_path || '/home/ubuntu/' }}"
+        
+        echo "Creating destination directory on EC2 B if it doesn't exist..."
+        ssh ec2-b "mkdir -p $DEST_PATH"
+        
+        echo "Copying files from runner to EC2 B:$DEST_PATH..."
+        
+        # Use rsync to copy to EC2 B
+        rsync -avz --progress \
+          -e "ssh" \
+          ./temp_copy/ \
+          ec2-b:"$DEST_PATH"
+        
+        echo "Files copied to EC2 B successfully"
+
+    - name: Verify copy on EC2 B
+      run: |
+        DEST_PATH="${{ github.event.inputs.dest_path || '/home/ubuntu/' }}"
+        
+        echo "Verifying files on EC2 B..."
+        ssh ec2-b "ls -la $DEST_PATH"
+
+    - name: Cleanup temporary files
+      run: |
+        echo "Cleaning up temporary files..."
+        rm -rf ./temp_copy
+        
+    - name: Copy completion summary
+      run: |
+        echo "✅ File copy operation completed successfully!"
+        echo "Source: EC2 A (${{ secrets.EC2_A_IP }})"
+        echo "Destination: EC2 B (${{ secrets.EC2_B_IP }})"
+        echo "Operation completed at: $(date)"
