@@ -11,7 +11,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d | tee ~/.ssh/id_rsa > /dev/null
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d | tee ~/.ssh/id_rsa > /dev/null
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H your.server.com >> ~/.ssh/known_hosts
 
