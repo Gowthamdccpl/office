@@ -7,7 +7,7 @@ jobs:
   copy-ec2:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Setup SSH key safely
+      # Step 1: Setup SSH key (no base64)
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -16,8 +16,8 @@ jobs:
           # Remove old key if exists
           rm -f ~/.ssh/id_rsa
           
-          # Write private key from secret (must be base64-encoded in GitHub Secrets)
-          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d | tee ~/.ssh/id_rsa > /dev/null
+          # Write raw private key from secret
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
           # Reset known_hosts (prevent old fingerprints)
@@ -28,7 +28,7 @@ jobs:
       # Step 2: Debug SSH Key (optional)
       - name: Debug SSH Key
         run: |
-          head -5 ~/.ssh/id_rsa
+          head -5 ~/.ssh/id_rsa || true
           file ~/.ssh/id_rsa || true
 
       # Step 3: Test SSH to EC2 A
