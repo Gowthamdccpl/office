@@ -7,15 +7,14 @@ jobs:
   copy-ec2:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Setup SSH Key
-      - name: Setup SSH Key
+      - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          chmod 600 ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d | tee ~/.ssh/id_rsa > /dev/null
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_A_IP }} >> ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.EC2_B_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H your.server.com >> ~/.ssh/known_hosts
+
 
 
       # Step 2: Debug SSH Key (check format)
