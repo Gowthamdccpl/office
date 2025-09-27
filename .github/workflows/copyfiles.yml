@@ -7,17 +7,25 @@ jobs:
   copy-ec2:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Setup SSH key safely
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
+          
+          # Remove old key if exists
+          rm -f ~/.ssh/id_rsa
+          
+          # Write private key from secret (must be base64-encoded in GitHub Secrets)
           echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d | tee ~/.ssh/id_rsa > /dev/null
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H your.server.com >> ~/.ssh/known_hosts
+          
+          # Reset known_hosts (prevent old fingerprints)
+          rm -f ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_A_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_B_IP }} >> ~/.ssh/known_hosts
 
-
-
-      # Step 2: Debug SSH Key (check format)
+      # Step 2: Debug SSH Key (optional)
       - name: Debug SSH Key
         run: |
           head -5 ~/.ssh/id_rsa
@@ -28,7 +36,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_A_IP }} "echo 'SSH to EC2 A works'"
 
-      # Step 4: Copy all files from EC2 A → GitHub runner
+      # Step 4: Pull files from EC2 A → GitHub runner
       - name: Pull files from EC2 A
         run: |
           mkdir -p ./ec2-files
